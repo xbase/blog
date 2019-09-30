@@ -23,23 +23,23 @@
 
 
 
-  <link rel="alternate" href="/blog/default" title="Base">
+  <link rel="alternate" href="/default" title="Base">
 
 
 
 
-  <link rel="shortcut icon" type="image/x-icon" href="/blog/favicon.ico?v=1.1">
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.1">
 
 
 
-<link rel="canonical" href="http://xbase.github.io/blog/2019-09-30-hdfs-EC/">
+<link rel="canonical" href="http://xbase.github.io/2019-09-30-hdfs-EC/">
 
 
 <meta name="description" content="背景随着大数据技术的发展，HDFS作为Hadoop的核心模块之一得到了广泛的应用。为了数据的可靠性，HDFS通过多副本机制来保证。在HDFS中的每一份数据都有两个副本，1TB的原始数据需要占用3TB的磁盘空间，存储利用率只有1/3。而且系统中大部分是使用频率非常低的冷数据，却和热数据一样存储3个副本，给存储空间和网络带宽带来了很大的压力。因此，在保证可靠性的前提下如何提高存储利用率已成为当前HDF">
 <meta name="keywords" content="HDFS,EC">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Hadoop 3.0 纠删码技术（Erasure Coding）">
-<meta property="og:url" content="http://xbase.github.io/blog/2019-09-30-hdfs-EC/index.html">
+<meta property="og:url" content="http://xbase.github.io/2019-09-30-hdfs-EC/index.html">
 <meta property="og:site_name" content="Base">
 <meta property="og:description" content="背景随着大数据技术的发展，HDFS作为Hadoop的核心模块之一得到了广泛的应用。为了数据的可靠性，HDFS通过多副本机制来保证。在HDFS中的每一份数据都有两个副本，1TB的原始数据需要占用3TB的磁盘空间，存储利用率只有1/3。而且系统中大部分是使用频率非常低的冷数据，却和热数据一样存储3个副本，给存储空间和网络带宽带来了很大的压力。因此，在保证可靠性的前提下如何提高存储利用率已成为当前HDF">
 <meta property="og:locale" content="en">
@@ -56,7 +56,7 @@
 <meta name="twitter:image" content="http://xbase.github.io/img/ec1.png">
 
 
-<link rel="stylesheet" type="text/css" href="/blog/css/style.css?v=1.1">
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1">
 <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
 
 
@@ -85,7 +85,7 @@
     <div id="page">
       <header id="masthead"><div class="site-header-inner">
     <h1 class="site-title">
-        <a href="/blog/." class="logo">Base</a>
+        <a href="/." class="logo">Base</a>
     </h1>
 
     <nav id="nav-top">
@@ -93,7 +93,7 @@
             <ul id="menu-top" class="nav-top-items">
                 
                     <li class="menu-item">
-                        <a href="/blog/archives">
+                        <a href="/archives">
                             
                             
                                 Archives
@@ -102,7 +102,7 @@
                     </li>
                 
                     <li class="menu-item">
-                        <a href="/blog/about">
+                        <a href="/about">
                             
                             
                                 About
@@ -195,9 +195,9 @@
 		
 		<div class="post-tags">
 		  
-			<a href="/blog/tags/HDFS/">HDFS</a>
+			<a href="/tags/HDFS/">HDFS</a>
 		  
-			<a href="/blog/tags/EC/">EC</a>
+			<a href="/tags/EC/">EC</a>
 		  
 		</div>
 		
@@ -207,7 +207,7 @@
   <nav class="post-nav">
     
     
-      <a class="next" href="/blog/2019-09-30-hello-world/">
+      <a class="next" href="/2019-09-30-hello-world/">
         <span class="next-text nav-default">Hello World</span>
         <span class="prev-text nav-mobile">Next</span>
         <i class="iconfont icon-right"></i>
@@ -257,13 +257,13 @@
 
 
   
-    <script type="text/javascript" src="/blog/lib/jquery/jquery-3.1.1.min.js"></script>
+    <script type="text/javascript" src="/lib/jquery/jquery-3.1.1.min.js"></script>
   
 
   
 
-    <script type="text/javascript" src="/blog/js/src/theme.js?v=1.1"></script>
-<script type="text/javascript" src="/blog/js/src/bootstrap.js?v=1.1"></script>
+    <script type="text/javascript" src="/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/js/src/bootstrap.js?v=1.1"></script>
 
   </body>
 </html>
