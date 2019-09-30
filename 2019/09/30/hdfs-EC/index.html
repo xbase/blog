@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang>
+  <head><meta name="generator" content="Hexo 3.9.0">
+    
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+
+
+<meta http-equiv="Cache-Control" content="no-transform">
+<meta http-equiv="Cache-Control" content="no-siteapp">
+
+
+
+  <meta name="description" content="Hadoop 3.0 纠删码技术（Erasure Coding）">
+
+
+
+
+  <meta name="keywords" content="HDFS,EC,">
+
+
+
+
+
+  <link rel="alternate" href="/default" title="Hexo">
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=1.1">
+
+
+
+<link rel="canonical" href="http://yoursite.com/2019/09/30/hdfs-EC/">
+
+
+<meta name="description" content="背景随着大数据技术的发展，HDFS作为Hadoop的核心模块之一得到了广泛的应用。为了数据的可靠性，HDFS通过多副本机制来保证。在HDFS中的每一份数据都有两个副本，1TB的原始数据需要占用3TB的磁盘空间，存储利用率只有1/3。而且系统中大部分是使用频率非常低的冷数据，却和热数据一样存储3个副本，给存储空间和网络带宽带来了很大的压力。因此，在保证可靠性的前提下如何提高存储利用率已成为当前HDF">
+<meta name="keywords" content="HDFS,EC">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Hadoop 3.0 纠删码技术（Erasure Coding）">
+<meta property="og:url" content="http://yoursite.com/2019/09/30/hdfs-EC/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="背景随着大数据技术的发展，HDFS作为Hadoop的核心模块之一得到了广泛的应用。为了数据的可靠性，HDFS通过多副本机制来保证。在HDFS中的每一份数据都有两个副本，1TB的原始数据需要占用3TB的磁盘空间，存储利用率只有1/3。而且系统中大部分是使用频率非常低的冷数据，却和热数据一样存储3个副本，给存储空间和网络带宽带来了很大的压力。因此，在保证可靠性的前提下如何提高存储利用率已成为当前HDF">
+<meta property="og:locale" content="en">
+<meta property="og:image" content="http://yoursite.com/img/ec1.png">
+<meta property="og:image" content="http://yoursite.com/img/ec2.png">
+<meta property="og:image" content="http://yoursite.com/img/ec3.png">
+<meta property="og:image" content="http://yoursite.com/img/ec4.png">
+<meta property="og:image" content="http://yoursite.com/img/ec5.png">
+<meta property="og:image" content="http://yoursite.com/img/ec6.png">
+<meta property="og:updated_time" content="2019-09-30T08:51:35.463Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Hadoop 3.0 纠删码技术（Erasure Coding）">
+<meta name="twitter:description" content="背景随着大数据技术的发展，HDFS作为Hadoop的核心模块之一得到了广泛的应用。为了数据的可靠性，HDFS通过多副本机制来保证。在HDFS中的每一份数据都有两个副本，1TB的原始数据需要占用3TB的磁盘空间，存储利用率只有1/3。而且系统中大部分是使用频率非常低的冷数据，却和热数据一样存储3个副本，给存储空间和网络带宽带来了很大的压力。因此，在保证可靠性的前提下如何提高存储利用率已成为当前HDF">
+<meta name="twitter:image" content="http://yoursite.com/img/ec1.png">
+
+
+<link rel="stylesheet" type="text/css" href="/css/style.css?v=1.1">
+<link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+
+
+
+
+
+<script type="text/javascript">
+  var themeConfig = {
+    fancybox: {
+      enable: false
+    },
+  };
+</script>
+
+
+
+
+  
+
+
+
+    <title> Hadoop 3.0 纠删码技术（Erasure Coding） - Hexo </title>
+  </head>
+
+  <body>
+    <div id="page">
+      <header id="masthead"><div class="site-header-inner">
+    <h1 class="site-title">
+        <a href="/." class="logo">Hexo</a>
+    </h1>
+
+    <nav id="nav-top">
+        
+            <ul id="menu-top" class="nav-top-items">
+                
+                    <li class="menu-item">
+                        <a href="/archives">
+                            
+                            
+                                Archives
+                            
+                        </a>
+                    </li>
+                
+                    <li class="menu-item">
+                        <a href="/about">
+                            
+                            
+                                About
+                            
+                        </a>
+                    </li>
+                
+            </ul>
+        
+  </nav>
+</div>
+
+      </header>
+      <div id="content">
+        
+    <div id="primary">
+        
+  <article class="post">
+    <header class="post-header">
+      <h1 class="post-title">
+        
+          Hadoop 3.0 纠删码技术（Erasure Coding）
+        
+      </h1>
+
+      <time class="post-time">
+          Sep 30 2019
+      </time>
+    </header>
+
+
+
+    
+            <div class="post-content">
+            <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>随着大数据技术的发展，HDFS作为Hadoop的核心模块之一得到了广泛的应用。为了数据的可靠性，HDFS通过多副本机制来保证。在HDFS中的每一份数据都有两个副本，1TB的原始数据需要占用3TB的磁盘空间，存储利用率只有1/3。而且系统中大部分是使用频率非常低的冷数据，却和热数据一样存储3个副本，给存储空间和网络带宽带来了很大的压力。因此，在保证可靠性的前提下如何提高存储利用率已成为当前HDFS面对的主要问题之一。</p>
+<p>Hadoop 3.0 引入了纠删码技术（Erasure Coding），它可以提高50%以上的存储利用率，并且保证数据的可靠性。</p>
+<p>纠删码技术（Erasure coding）简称EC，是一种编码容错技术。最早用于通信行业，数据传输中的数据恢复。它通过对数据进行分块，然后计算出校验数据，使得各个部分的数据产生关联性。当一部分数据块丢失时，可以通过剩余的数据块和校验数据计算出丢失的数据块。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>Reed-Solomon（RS）码是存储系统较为常用的一种纠删码，它有两个参数k和m，记为RS(k,m)。如下图所示，k个数据块组成一个向量被乘上一个生成矩阵（Generator Matrix）GT从而得到一个码字（codeword）向量，该向量由k个数据块和m个校验块构成。如果一个数据块丢失，可以用(GT)-1乘以码字向量来恢复出丢失的数据块。RS(k,m)最多可容忍m个块（包括数据块和校验块）丢失。</p>
+<p><img src="/img/ec1.png" alt="ec1"></p>
+<p>比如：我们有 7、8、9 三个原始数据，通过矩阵乘法，计算出来两个校验数据 50、122。这时原始数据加上校验数据，一共五个数据：7、8、9、50、122，可以任意丢两个，然后可以通过算法进行恢复。</p>
+<p><img src="/img/ec2.png" alt="ec2"></p>
+<h2 id="HDFS-EC-方案"><a href="#HDFS-EC-方案" class="headerlink" title="HDFS EC 方案"></a>HDFS EC 方案</h2><p>传统模式下HDFS中文件的基本构成单位是block，而EC模式下文件的基本构成单位是block group。以RS(3,2)为例，每个block group包含3个数据块，2个校验块。</p>
+<h3 id="连续布局（Contiguous-Layout）"><a href="#连续布局（Contiguous-Layout）" class="headerlink" title="连续布局（Contiguous Layout）"></a>连续布局（Contiguous Layout）</h3><p>文件数据被依次写入块中，一个块写满之后再写入下一个块，这种分布方式称为连续布局。</p>
+<p>优点：</p>
+<ul>
+<li>容易实现</li>
+<li>方便和多副本存储策略进行转换</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>需要客户端缓存足够多的数据块   </li>
+<li>不适合存储小文件</li>
+</ul>
+<p><img src="/img/ec3.png" alt="ec3"></p>
+<h3 id="条形布局（Striping-Layout）"><a href="#条形布局（Striping-Layout）" class="headerlink" title="条形布局（Striping Layout）"></a>条形布局（Striping Layout）</h3><p>条（stripe）是由若干个相同大小的单元（cell）构成的序列。文件数据被依次写入条的各个单元中，当一个条写满之后再写入下一个条，一个条的不同单元位于不同的数据块中。这种分布方式称为条形布局。</p>
+<p>优点：</p>
+<ul>
+<li>客户端缓存数据较少</li>
+<li>无论文件大小都适用</li>
+</ul>
+<p>缺点：</p>
+<ul>
+<li>会影响一些位置敏感任务的性能，因为原先在一个节点上的块被分散到了多个不同的节点上</li>
+<li>和多副本存储策略转换比较麻烦</li>
+</ul>
+<p><img src="/img/ec4.png" alt="ec4"></p>
+<h2 id="HDFS-EC-开发计划"><a href="#HDFS-EC-开发计划" class="headerlink" title="HDFS EC 开发计划"></a>HDFS EC 开发计划</h2><p>整个HDFS EC项目主要分为两个阶段：</p>
+<ol>
+<li>用户可以读、写一个条形布局（Striping Layout）的文件；如果该文件的一个块丢失，后台能够检查出并恢复；如果在读的过程中发现数据丢失，能够立即解码出丢失的数据从而不影响读操作。</li>
+<li>支持将一个多副本模式（HDFS原有模式）的文件转换成连续布局（Contiguous Layout），以及从连续布局转换成多副本模式。</li>
+</ol>
+<p>由于条形布局无论文件大小，都可以节省存储空间，所以HDFS优先考虑支持条形布局。目前第一阶段 <a href="https://issues.apache.org/jira/browse/HDFS-7285" target="_blank" rel="noopener">HDFS-7285</a> 已经实现，第二阶段 <a href="https://issues.apache.org/jira/browse/HDFS-8030" target="_blank" rel="noopener">HDFS-8030</a> 正在进行中。</p>
+<p><img src="/img/ec5.png" alt="ec5"></p>
+<p><img src="/img/ec6.png" alt="ec6"></p>
+<h2 id="HDFS-EC-设置方式"><a href="#HDFS-EC-设置方式" class="headerlink" title="HDFS EC 设置方式"></a>HDFS EC 设置方式</h2><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">Usage: bin/hdfs ec [COMMAND]</span><br><span class="line">          [-setPolicy -path &lt;path&gt; [-policy &lt;policy&gt;] [-replicate]]</span><br><span class="line">                为指定目录设置存储策略</span><br><span class="line">          [-unsetPolicy -path &lt;path&gt;]</span><br><span class="line">                取消为指定目录设置的存储策略</span><br><span class="line">          [-getPolicy -path &lt;path&gt;]</span><br><span class="line">                获取指定目录的存储策略</span><br><span class="line">          [-enablePolicy -policy &lt;policy&gt;]</span><br><span class="line">                开启一个存储策略</span><br><span class="line">          [-disablePolicy -policy &lt;policy&gt;]</span><br><span class="line">                关闭一个存储策略</span><br><span class="line">          [-addPolicies -policyFile &lt;file&gt;]</span><br><span class="line">                增加一个存储策略</span><br><span class="line">          [-removePolicy -policy &lt;policy&gt;]</span><br><span class="line">                移除一个存储策略</span><br><span class="line">          [-listPolicies]</span><br><span class="line">                显示所有的存储策略（如：RS-6-3-1024k、RS-3-2-1024k、XOR-2-1-1024k等），只有enabled状态的策略，可以被setPolicy命令使用</span><br><span class="line">          [-listCodecs]</span><br><span class="line">                显示当前系统支持的全部编解码器（如：RS、XOR等）</span><br></pre></td></tr></table></figure>
+
+<p><strong>注意</strong></p>
+<ol>
+<li>EC存储策略下的文件，不支持append()、hflush()、hsync()</li>
+<li>不同存储策略的目录或文件，目前没有提供转换的方法。比如想把一个以RS(3,2)存储的文件，转换为RS(6,3)存储策略，或者三副本存储策略，目前并没有转换方法，但可以通过把文件复制到相应存储策略的目录来达到这个目的（比如cp、distcp）</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>Hadoop纠删码技术相比于传统多副本方案，可以在保证可靠性的前提性，节省50%以上的存储空间；但当有块丢失的时候，修复过程需要连接多个DataNode，对网络带宽、磁盘IO、CPU都消耗过大，所以一般建议用于存储冷数据。</p>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>[1] <a href="http://hadoop.apache.org/docs/r3.0.0-beta1/hadoop-project-dist/hadoop-hdfs/HDFSErasureCoding.html" target="_blank" rel="noopener">http://hadoop.apache.org/docs/r3.0.0-beta1/hadoop-project-dist/hadoop-hdfs/HDFSErasureCoding.html</a><br>[2] <a href="http://blog.cloudera.com/blog/2015/09/introduction-to-hdfs-erasure-coding-in-apache-hadoop" target="_blank" rel="noopener">http://blog.cloudera.com/blog/2015/09/introduction-to-hdfs-erasure-coding-in-apache-hadoop</a><br>[3] <a href="https://issues.apache.org/jira/secure/attachment/12697210/HDFSErasureCodingDesign-20150206.pdf" target="_blank" rel="noopener">https://issues.apache.org/jira/secure/attachment/12697210/HDFSErasureCodingDesign-20150206.pdf</a><br>[4] <a href="https://www.iteblog.com/archives/1684.html" target="_blank" rel="noopener">https://www.iteblog.com/archives/1684.html</a><br>[5] <a href="http://geek.csdn.net/news/detail/77338" target="_blank" rel="noopener">http://geek.csdn.net/news/detail/77338</a>  </p>
+
+            </div>
+          
+
+    
+      <footer class="post-footer">
+		
+		<div class="post-tags">
+		  
+			<a href="/tags/HDFS/">HDFS</a>
+		  
+			<a href="/tags/EC/">EC</a>
+		  
+		</div>
+		
+
+        
+        
+  <nav class="post-nav">
+    
+    
+      <a class="next" href="/2019/09/30/hello-world/">
+        <span class="next-text nav-default">Hello World</span>
+        <span class="prev-text nav-mobile">Next</span>
+        <i class="iconfont icon-right"></i>
+      </a>
+    
+  </nav>
+
+        
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+      </footer>
+    
+  </article>
+
+    </div>
+
+      </div>
+
+      <footer id="colophon"><span class="copyright-year">
+    
+        &copy;
+    
+        2014 -
+    
+    2019
+    <span class="footer-author">John Doe.</span>
+    <span class="power-by">
+        Powered by <a class="hexo-link" href="https://hexo.io/">Hexo</a> and <a class="theme-link" href="https://github.com/frostfan/hexo-theme-polarbear">Polar Bear</a>
+    </span>
+</span>
+
+      </footer>
+
+      <div class="back-to-top" id="back-to-top">
+        <i class="iconfont icon-up"></i>
+      </div>
+    </div>
+    
+
+
+    
+
+
+
+
+  
+    <script type="text/javascript" src="/lib/jquery/jquery-3.1.1.min.js"></script>
+  
+
+  
+
+    <script type="text/javascript" src="/js/src/theme.js?v=1.1"></script>
+<script type="text/javascript" src="/js/src/bootstrap.js?v=1.1"></script>
+
+  </body>
+</html>
